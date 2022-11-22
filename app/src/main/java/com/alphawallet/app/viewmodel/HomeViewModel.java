@@ -322,6 +322,7 @@ public class HomeViewModel extends BaseViewModel {
         {
             if (qrCode == null) return;
 
+            Timber.tag(TAG).e("QR Code: " + qrCode);
             QRParser parser = QRParser.getInstance(EthereumNetworkBase.extraChains());
             QRResult qrResult = parser.parse(qrCode);
 
