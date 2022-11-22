@@ -57,8 +57,6 @@ public abstract class C {
     public static final String AURORA_TESTNET_NAME = "Aurora (Test)";
     public static final String MILKOMEDA_NAME = "Milkomeda Cardano";
     public static final String MILKOMEDA_TESTNET_NAME = "Milkomeda Cardano (Test)";
-    public static final String PHI_NETWORK_NAME = "PHI";
-    public static final String PHI_V2_NETWORK_NAME = "PHI v2";
     public static final String SEPOLIA_TESTNET_NAME = "Sepolia (Test)";
     public static final String OPTIMISM_GOERLI_TESTNET_NAME = "Optimism Goerli (Test)";
     public static final String ARBITRUM_GOERLI_TESTNET_NAME = "Arbitrum Goerli (Test)";
@@ -94,7 +92,6 @@ public abstract class C {
     public static final String IOTEX_SYMBOL = "IOTX";
     public static final String MILKOMEDA_SYMBOL = "milkADA";
     public static final String MILKOMEDA_TEST_SYMBOL = "milktADA";
-    public static final String PHI_NETWORK_SYMBOL = "\u03d5";
     public static final String SEPOLIA_SYMBOL = "ETH";
     public static final String OPTIMISM_GOERLI_TEST_SYMBOL = "ETH";
     public static final String ARBITRUM_GOERLI_TEST_SYMBOL = "AGOR";
@@ -303,6 +300,9 @@ public abstract class C {
     public static final String APP_NAME = "PACKAGE_NAME";
 
     public static final String ALPHAWALLET_LOGO_URI = "https://alphawallet.com/wp-content/themes/alphawallet/img/logo-horizontal-new.svg";
+    public static final String ALPHAWALLET_WEBSITE = "https://alphawallet.com";
+    public static final String WALLET_CONNECT_REACT_APP_RELAY_URL = "wss://relay.walletconnect.com";
+    public static final String ALPHA_WALLET_LOGO_URL = "https://user-images.githubusercontent.com/51817359/158344418-c0f2bd19-38bb-4e64-a1d5-25ceb099688a.png";
 
     // Theme/Dark Mode
     public static final int THEME_LIGHT = 0;

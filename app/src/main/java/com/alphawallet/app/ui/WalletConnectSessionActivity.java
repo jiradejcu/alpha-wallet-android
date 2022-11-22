@@ -1,6 +1,6 @@
 package com.alphawallet.app.ui;
 
-import static com.alphawallet.app.C.Key.WALLET;
+import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -21,6 +21,7 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.widget.PopupMenu;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
@@ -30,16 +31,18 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.alphawallet.app.C;
 import com.alphawallet.app.R;
 import com.alphawallet.app.analytics.Analytics;
-import com.alphawallet.app.entity.Wallet;
-import com.alphawallet.app.entity.analytics.QrScanSource;
 import com.alphawallet.app.entity.walletconnect.WalletConnectSessionItem;
+import com.alphawallet.app.entity.walletconnect.WalletConnectV2SessionItem;
 import com.alphawallet.app.repository.EthereumNetworkRepository;
 import com.alphawallet.app.ui.QRScanning.QRScannerActivity;
+import com.alphawallet.app.ui.widget.divider.ListDivider;
 import com.alphawallet.app.viewmodel.WalletConnectViewModel;
-import com.alphawallet.app.widget.AWalletAlertDialog;
+import com.alphawallet.app.walletconnect.AWWalletConnectClient;
 import com.bumptech.glide.Glide;
 
 import java.util.List;
+
+import javax.inject.Inject;
 
 import dagger.hilt.android.AndroidEntryPoint;
 import timber.log.Timber;
@@ -52,15 +55,13 @@ import timber.log.Timber;
 public class WalletConnectSessionActivity extends BaseActivity
 {
     private final Handler handler = new Handler(Looper.getMainLooper());
-    private final LocalBroadcastManager broadcastManager;
+    private LocalBroadcastManager broadcastManager;
     WalletConnectViewModel viewModel;
     private RecyclerView recyclerView;
     private Button btnConnectWallet;
     private LinearLayout layoutNoActiveSessions;
     private CustomAdapter adapter;
-    private Wallet wallet;
     private List<WalletConnectSessionItem> wcSessions;
-    private int connectionCount = -1;
     private final BroadcastReceiver walletConnectChangeReceiver = new BroadcastReceiver()
     {
         @Override
@@ -70,27 +71,25 @@ public class WalletConnectSessionActivity extends BaseActivity
             if (action.equals(C.WALLET_CONNECT_COUNT_CHANGE))
             {
                 handler.post(() -> adapter.notifyDataSetChanged());
-                connectionCount = intent.getIntExtra("count", 0);
             }
         }
     };
 
-    public WalletConnectSessionActivity()
-    {
-        broadcastManager = LocalBroadcastManager.getInstance(this);
-    }
+    @Inject
+    AWWalletConnectClient awWalletConnectClient;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState)
     {
         super.onCreate(savedInstanceState);
-
         setContentView(R.layout.activity_wallet_connect_sessions);
         toolbar();
         setTitle(getString(R.string.title_wallet_connect));
-        wallet = getIntent().getParcelableExtra(WALLET);
         initViewModel();
 
+        recyclerView = findViewById(R.id.list);
+        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        recyclerView.addItemDecoration(new ListDivider(this));
         layoutNoActiveSessions = findViewById(R.id.layout_no_sessions);
         btnConnectWallet = findViewById(R.id.btn_connect_wallet);
         btnConnectWallet.setOnClickListener(v -> openQrScanner());
@@ -103,6 +102,11 @@ public class WalletConnectSessionActivity extends BaseActivity
             viewModel = new ViewModelProvider(this)
                     .get(WalletConnectViewModel.class);
             viewModel.serviceReady().observe(this, this::onServiceReady);
+        }
+
+        if (broadcastManager == null)
+        {
+            broadcastManager = LocalBroadcastManager.getInstance(getApplicationContext());
         }
     }
 
@@ -119,54 +123,54 @@ public class WalletConnectSessionActivity extends BaseActivity
         }
     }
 
-    @Override
-    public void onPause()
-    {
-        super.onPause();
-        stopConnectionCheck();
-    }
-
     private void setupList()
     {
         wcSessions = viewModel.getSessions();
 
-        if (wcSessions != null)
+        layoutNoActiveSessions.setVisibility(View.VISIBLE);
+        if (wcSessions.isEmpty())
         {
-            if (wcSessions.isEmpty())
+            layoutNoActiveSessions.setVisibility(View.VISIBLE);
+            // remove ghosting when all items deleted
+            if (recyclerView != null)
             {
-                layoutNoActiveSessions.setVisibility(View.VISIBLE);
-                // remove ghosting when all items deleted
-                if (recyclerView != null)
+                RecyclerView.Adapter adapter = recyclerView.getAdapter();
+                if (adapter != null)
                 {
-                    RecyclerView.Adapter adapter = recyclerView.getAdapter();
-                    if (adapter != null)
-                    {
-                        adapter.notifyDataSetChanged();
-                    }
+                    adapter.notifyDataSetChanged();
                 }
             }
-            else
-            {
-                layoutNoActiveSessions.setVisibility(View.GONE);
-                recyclerView = findViewById(R.id.list);
-                recyclerView.setLayoutManager(new LinearLayoutManager(this));
-                adapter = new CustomAdapter();
-                recyclerView.setAdapter(adapter);
-                adapter.notifyDataSetChanged();
-            }
         }
+        else
+        {
+            layoutNoActiveSessions.setVisibility(View.GONE);
+            recyclerView = findViewById(R.id.list);
+            recyclerView.setLayoutManager(new LinearLayoutManager(this));
+            adapter = new CustomAdapter();
+            recyclerView.setAdapter(adapter);
+            adapter.notifyDataSetChanged();
+        }
+
+        adapter = new CustomAdapter();
+        recyclerView.setAdapter(adapter);
     }
 
     @Override
     public void onResume()
     {
         super.onResume();
-        connectionCount = -1;
         initViewModel();
         setupList();
         startConnectionCheck();
 
         viewModel.track(Analytics.Navigation.WALLET_CONNECT_SESSIONS);
+    }
+
+    @Override
+    public void onPause()
+    {
+        super.onPause();
+        stopConnectionCheck();
     }
 
     @Override
@@ -199,8 +203,6 @@ public class WalletConnectSessionActivity extends BaseActivity
     private void openQrScanner()
     {
         Intent intent = new Intent(this, QRScannerActivity.class);
-        intent.putExtra("wallet", wallet);
-        intent.putExtra(QrScanSource.KEY, QrScanSource.WALLET_CONNECT.getValue());
         intent.putExtra(C.EXTRA_UNIVERSAL_SCAN, true);
         startActivity(intent);
     }
@@ -245,16 +247,27 @@ public class WalletConnectSessionActivity extends BaseActivity
 
     private void dialogConfirmDelete(WalletConnectSessionItem session)
     {
-        AWalletAlertDialog dialog = new AWalletAlertDialog(this);
-        dialog.setTitle(R.string.title_delete_session);
-        dialog.setMessage(getString(R.string.delete_session, session.name));
-        dialog.setButton(R.string.delete, v -> {
-            dialog.dismiss();
-            viewModel.deleteSession(session.sessionId);
-            setupList();
-        });
-        dialog.setSecondaryButton(R.string.action_cancel, v -> dialog.dismiss());
-        dialog.setCancelable(false);
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        AlertDialog dialog = builder.setTitle(R.string.title_delete_session)
+                .setMessage(getString(R.string.delete_session, session.name))
+                .setPositiveButton(R.string.delete, (d, w) -> {
+                    viewModel.deleteSession(session, new AWWalletConnectClient.WalletConnectV2Callback()
+                    {
+                        @Override
+                        public void onSessionDisconnected()
+                        {
+                            runOnUiThread(() -> {
+                                setupList();
+                                awWalletConnectClient.updateNotification();
+                            });
+                        }
+                    });
+                })
+                .setNegativeButton(R.string.action_cancel, (d, w) -> {
+                    d.dismiss();
+                })
+                .setCancelable(false)
+                .create();
         dialog.show();
     }
 
@@ -292,10 +305,8 @@ public class WalletConnectSessionActivity extends BaseActivity
             holder.peerUrl.setText(session.url);
             holder.chainIcon.setImageResource(EthereumNetworkRepository.getChainLogo(session.chainId));
             holder.clickLayer.setOnClickListener(v -> {
-                //go to wallet connect session page
-                Intent intent = new Intent(getApplication(), WalletConnectActivity.class);
-                intent.putExtra("session", session.sessionId);
-                startActivity(intent);
+                Context context = getApplicationContext();
+                context.startActivity(newIntent(context, session));
             });
 
             setupClient(session.sessionId, holder);
@@ -335,5 +346,22 @@ public class WalletConnectSessionActivity extends BaseActivity
                 view.findViewById(R.id.chain_icon_background).setVisibility(View.VISIBLE);
             }
         }
+    }
+
+    public static Intent newIntent(Context context, WalletConnectSessionItem session)
+    {
+        Intent intent;
+        if (session instanceof WalletConnectV2SessionItem)
+        {
+            intent = new Intent(context, WalletConnectV2Activity.class);
+            intent.putExtra("session", (WalletConnectV2SessionItem) session);
+        }
+        else
+        {
+            intent = new Intent(context, WalletConnectActivity.class);
+            intent.putExtra("session", session.sessionId);
+        }
+        intent.addFlags(FLAG_ACTIVITY_NEW_TASK);
+        return intent;
     }
 }
