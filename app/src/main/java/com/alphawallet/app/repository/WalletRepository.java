@@ -3,19 +3,18 @@ package com.alphawallet.app.repository;
 import com.alphawallet.app.entity.Wallet;
 import com.alphawallet.app.service.AccountKeystoreService;
 import com.alphawallet.app.service.KeyService;
-
-import org.web3j.protocol.core.DefaultBlockParameterName;
+import com.google.gson.Gson;
 
 import java.io.IOException;
-import java.math.BigDecimal;
+import java.util.HashMap;
+import java.util.Map;
 
 import io.reactivex.Completable;
 import io.reactivex.Single;
-import io.reactivex.disposables.Disposable;
-import io.reactivex.schedulers.Schedulers;
 import io.realm.Realm;
-
-import static com.alphawallet.app.repository.TokenRepository.getWeb3jService;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import timber.log.Timber;
 
 public class WalletRepository implements WalletRepositoryType
 {
@@ -24,20 +23,26 @@ public class WalletRepository implements WalletRepositoryType
 	private final EthereumNetworkRepositoryType networkRepository;
 	private final WalletDataRealmSource walletDataRealmSource;
 	private final KeyService keyService;
+    private final OkHttpClient httpClient;
+    private final Gson gson;
+    public static final String MERCHANT_API = "http://128.199.221.49:3000";
+    private static Map<String, String> merchantMap;
 
-	public WalletRepository(PreferenceRepositoryType preferenceRepositoryType, AccountKeystoreService accountKeystoreService, EthereumNetworkRepositoryType networkRepository, WalletDataRealmSource walletDataRealmSource, KeyService keyService)
+	public WalletRepository(PreferenceRepositoryType preferenceRepositoryType, AccountKeystoreService accountKeystoreService, EthereumNetworkRepositoryType networkRepository, WalletDataRealmSource walletDataRealmSource, KeyService keyService, OkHttpClient httpClient, Gson gson)
 	{
 		this.preferenceRepositoryType = preferenceRepositoryType;
 		this.accountKeystoreService = accountKeystoreService;
 		this.networkRepository = networkRepository;
 		this.walletDataRealmSource = walletDataRealmSource;
 		this.keyService = keyService;
+        this.httpClient = httpClient;
+        this.gson = gson;
 	}
 
 	@Override
 	public Single<Wallet[]> fetchWallets()
 	{
-		return accountKeystoreService.fetchAccounts()
+        return accountKeystoreService.fetchAccounts()
 				.flatMap(wallets -> walletDataRealmSource.populateWalletData(wallets, keyService))
 				.map(wallets -> {
 					if (preferenceRepositoryType.getCurrentWalletAddress() == null && wallets.length > 0)
@@ -67,6 +72,36 @@ public class WalletRepository implements WalletRepositoryType
 					return Single.just(firstWallet);
 				});
 	}
+
+    public Single<Map<String, String>> fetchMerchants()
+    {
+        return Single.fromCallable(() -> {
+            Request request = new Request.Builder()
+                    .url(MERCHANT_API + "/address")
+                    .get()
+                    .build();
+            try
+            {
+                okhttp3.Response response = httpClient.newCall(request).execute();
+                merchantMap = gson.fromJson(response.body().string(), Map.class);
+            }
+            catch (IOException e)
+            {
+                e.printStackTrace();
+            }
+            return merchantMap;
+        });
+    }
+
+    public static String findWalletAddressFromTelNo(String telNo)
+    {
+        if (merchantMap.containsKey(telNo))
+        {
+            Timber.i("Found Wallet Address: " + merchantMap.get(telNo) + " from Telephone No." + telNo);
+            return merchantMap.get(telNo);
+        }
+        return null;
+    }
 
 	@Override
 	public Single<Wallet> createWallet(String password)

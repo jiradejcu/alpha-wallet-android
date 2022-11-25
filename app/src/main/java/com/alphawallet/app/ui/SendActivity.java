@@ -36,6 +36,7 @@ import com.alphawallet.app.entity.Wallet;
 import com.alphawallet.app.entity.tokens.Token;
 import com.alphawallet.app.repository.EthereumNetworkBase;
 import com.alphawallet.app.repository.EthereumNetworkRepository;
+import com.alphawallet.app.repository.WalletRepository;
 import com.alphawallet.app.service.GasService;
 import com.alphawallet.app.ui.QRScanning.QRScannerActivity;
 import com.alphawallet.app.ui.widget.entity.ActionSheetCallback;
@@ -245,6 +246,10 @@ public class SendActivity extends BaseActivity implements AmountReadyCallback, S
                                         case "ethereum":
                                             //EIP681 protocol
                                             validateEIP681Request(result, false);
+                                            break;
+                                        case "tel_no":
+                                            String mapped_address = WalletRepository.findWalletAddressFromTelNo(extracted_address);
+                                            addressInput.setAddress(mapped_address);
                                             break;
                                         default:
                                             break;

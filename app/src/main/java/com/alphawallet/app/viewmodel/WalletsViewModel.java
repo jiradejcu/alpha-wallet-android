@@ -187,7 +187,7 @@ public class WalletsViewModel extends BaseViewModel implements ServiceSyncCallba
     {
         defaultWallet.postValue(wallet);
         disposable = fetchWalletsInteract
-                .fetch()
+                .fetchWallets()
                 .subscribe(this::onWallets, this::onError);
     }
 
@@ -212,7 +212,7 @@ public class WalletsViewModel extends BaseViewModel implements ServiceSyncCallba
             syncFromDBOnly(w, true);
         }
 
-        disposable = fetchWalletsInteract.fetch().subscribe(this::startBalanceUpdateTimer);
+        disposable = fetchWalletsInteract.fetchWallets().subscribe(this::startBalanceUpdateTimer);
     }
 
     private Disposable startWalletSyncProcess(Wallet w)
@@ -337,7 +337,7 @@ public class WalletsViewModel extends BaseViewModel implements ServiceSyncCallba
     {
         //check for updates
         //check names first
-        ensWrappingCheck = fetchWalletsInteract.fetch().toObservable()
+        ensWrappingCheck = fetchWalletsInteract.fetchWallets().toObservable()
                 .flatMap(Observable::fromArray)
                 .forEach(wallet -> ensCheck = ensResolver.reverseResolveEns(wallet.address)
                                                     .onErrorReturnItem(wallet.ENSname != null ? wallet.ENSname : "")
@@ -348,7 +348,7 @@ public class WalletsViewModel extends BaseViewModel implements ServiceSyncCallba
 
         //now load the current wallets from database
         disposable = fetchWalletsInteract
-                .fetch()
+                .fetchWallets()
                 .subscribe(this::startFullWalletSync, this::onError);
     }
 

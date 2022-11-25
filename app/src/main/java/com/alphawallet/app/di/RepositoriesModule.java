@@ -100,10 +100,12 @@ public class RepositoriesModule
             AccountKeystoreService accountKeystoreService,
             EthereumNetworkRepositoryType networkRepository,
             WalletDataRealmSource walletDataRealmSource,
-            KeyService keyService)
+            KeyService keyService,
+            OkHttpClient httpClient,
+            Gson gson)
     {
         return new WalletRepository(
-                preferenceRepositoryType, accountKeystoreService, networkRepository, walletDataRealmSource, keyService);
+                preferenceRepositoryType, accountKeystoreService, networkRepository, walletDataRealmSource, keyService, httpClient, gson);
     }
 
     @Singleton

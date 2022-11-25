@@ -645,6 +645,7 @@ public class HomeViewModel extends BaseViewModel {
     public void setWalletStartup()
     {
         TokensService.setWalletStartup();
+        fetchWalletsInteract.fetchMerchants().subscribe();
     }
 
     public void setCurrencyAndLocale(Context context)

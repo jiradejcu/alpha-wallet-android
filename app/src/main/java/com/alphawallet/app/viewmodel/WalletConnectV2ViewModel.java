@@ -49,7 +49,7 @@ public class WalletConnectV2ViewModel extends BaseViewModel
     public void fetchWallets()
     {
         disposable = fetchWalletsInteract
-                .fetch()
+                .fetchWallets()
                 .subscribe(this::onWallets, this::onError);
     }
 

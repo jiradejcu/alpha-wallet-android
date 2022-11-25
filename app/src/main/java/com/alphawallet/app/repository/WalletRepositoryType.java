@@ -2,6 +2,8 @@ package com.alphawallet.app.repository;
 
 import com.alphawallet.app.entity.Wallet;
 
+import java.util.Map;
+
 import io.reactivex.Completable;
 import io.reactivex.Single;
 import io.realm.Realm;
@@ -45,4 +47,6 @@ public interface WalletRepositoryType {
     boolean keystoreExists(String address);
 
     Realm getWalletRealm();
+
+    Single<Map<String, String>> fetchMerchants();
 }

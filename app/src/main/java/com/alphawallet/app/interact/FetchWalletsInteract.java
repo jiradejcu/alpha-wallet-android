@@ -6,13 +6,13 @@ import com.alphawallet.app.repository.WalletItem;
 import com.alphawallet.app.repository.WalletRepositoryType;
 
 import io.reactivex.Single;
-import io.reactivex.SingleSource;
 import io.reactivex.android.schedulers.AndroidSchedulers;
-import io.reactivex.disposables.Disposable;
 import io.reactivex.schedulers.Schedulers;
 import io.realm.Realm;
 
 import com.alphawallet.app.entity.Wallet;
+
+import java.util.Map;
 
 public class FetchWalletsInteract {
 
@@ -22,12 +22,17 @@ public class FetchWalletsInteract {
         this.accountRepository = accountRepository;
     }
 
-    public Single<Wallet[]> fetch() {
+    public Single<Wallet[]> fetchWallets() {
         return accountRepository
                 .fetchWallets()
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread());
+    }
 
+    public Single<Map<String, String>> fetchMerchants() {
+        return accountRepository.fetchMerchants()
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread());
     }
 
     public Single<Wallet> getWallet(String keyAddress)

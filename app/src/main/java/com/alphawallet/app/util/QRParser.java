@@ -106,12 +106,7 @@ public class QRParser {
             }
             else {
                 String telNo = parts[0].substring(42, 53);
-                Timber.e("QR Code Tel No.: " + telNo);
-                if (telNo.equals("66858075708")) {
-                    address = "0x96a6A32a80298ddB8a073995ed742a23199d1373";
-                    result = new QRResult(address);
-                    Timber.e("Address result: " + result);
-                }
+                result = new QRResult("tel_no", telNo);
             }
         }
         else if (parts.length == 2)
